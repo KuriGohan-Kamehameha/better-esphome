@@ -20,6 +20,7 @@ light:
     name: "${friendly_name} Status LED"
     pin: GPIO27
     num_leds: 1
+    chipset: WS2812
     rgb_order: GRB
     on_turn_on:
       - lambda: |-
