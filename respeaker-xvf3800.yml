@@ -1506,13 +1506,6 @@ external_components:
     components: [media_player]
     refresh: never
   - source:
-      # https://github.com/esphome/esphome/pull/12284
-      type: git
-      url: https://github.com/esphome/esphome
-      ref: dev
-    components: [mdns]
-    refresh: never
-  - source:
       # https://github.com/esphome/esphome/pull/12429
       type: git
       url: https://github.com/esphome/esphome
