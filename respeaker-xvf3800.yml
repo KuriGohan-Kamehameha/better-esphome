@@ -1135,11 +1135,9 @@ script:
   # Script executed when the timer is ringing, to repeat the timer finished sound.
   - id: enable_repeat_one
     then:
-      - homeassistant.service:
-          service: media_player.repeat_set
-          data:
-            entity_id: ${external_media_player_entity_id}
-            repeat: one
+      - media_player.repeat:
+          id: external_media_player
+          mode: ONE
       # Turn on the repeat mode and pause for 500 ms between playlist items/repeats
       - lambda: |-
             id(external_media_player)->set_playlist_delay_ms(1, 500);
@@ -1148,11 +1146,9 @@ script:
   - id: disable_repeat
     then:
       # Turn off the repeat mode and pause for 0 ms between playlist items/repeats
-      - homeassistant.service:
-          service: media_player.repeat_set
-          data:
-            entity_id: ${external_media_player_entity_id}
-            repeat: "off"
+      - media_player.repeat:
+          id: external_media_player
+          mode: OFF
       - lambda: |-
             id(external_media_player)->set_playlist_delay_ms(1, 0);
 
