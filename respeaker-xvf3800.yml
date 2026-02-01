@@ -56,6 +56,8 @@ esphome:
   project:
     name: fitoori.Respeaker XVF3800 Satellite
     version: 2026.1.2
+  includes:
+    - media_player_compat.h
   min_version: 2026.1.0
   on_boot:
     - priority: 375
