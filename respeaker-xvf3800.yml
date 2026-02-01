@@ -1528,14 +1528,14 @@ external_components:
       # https://github.com/esphome/esphome/pull/12258
       type: git
       url: https://github.com/esphome/esphome
-      ref: bff22983a390352360796f8e1363127e0cd1f898
+      ref: dev
     components: [media_player]
     refresh: never
   - source:
       # https://github.com/esphome/esphome/pull/12284
       type: git
       url: https://github.com/esphome/esphome
-      ref: a6c0a861a014e64c67d46115eba8e5370777b80a
+      ref: dev
     components: [mdns, sendspin]
     refresh: never
   - source:
