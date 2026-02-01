@@ -1512,13 +1512,6 @@ external_components:
       ref: 928204066ce0082404573ea1c6a0b58aeebbd7c6
     components: [file, http_request, media_source, speaker_source]
     refresh: never
-  - source:
-      # Align mdns with core helper template changes.
-      type: git
-      url: https://github.com/esphome/esphome
-      ref: dev
-    components: [mdns]
-    refresh: never
 
 respeaker_xvf3800:
   id: respeaker
