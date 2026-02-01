@@ -1,1 +1,31 @@
+substitutions:
+  device_name: atom-echo
+  friendly_name: Atom Echo
 
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  min_version: 2024.6.0
+
+esp32:
+  board: m5stack-atom
+  framework:
+    type: esp-idf
+
+logger:
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_listening
+    name: "${friendly_name} Status LED"
+    pin: GPIO27
+    num_leds: 1
+    rgb_order: GRB
+    on_turn_on:
+      - lambda: |-
+          auto *src = id(status_listening);
+          auto &cv = src->remote_values;
+          float r = cv.get_red();
+          float g = cv.get_green();
+          float b = cv.get_blue();
+          // Use the captured RGB values in your existing status handler.
