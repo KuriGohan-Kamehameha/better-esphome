@@ -1,1 +1,358 @@
+substitutions:
+  device_name: atom-lite
+  friendly_name: Atom Lite
 
+  # Atom Lite pin map (M5Stack official docs)
+  pin_ir_tx: GPIO12
+  pin_rgb: GPIO27
+  pin_button: GPIO39
+  pin_i2c_scl: GPIO21
+  pin_i2c_sda: GPIO25
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.10.0
+  project:
+    # Must be exactly "author.project" (single dot)
+    name: "m5stack.atom_lite_ir_blaster"
+    version: "2.0.0"
+  # Defensive: avoids some ESP32-IDF BLE reboot-loop edge cases on certain modules
+  platformio_options:
+    board_build.flash_mode: dio
+
+esp32:
+  board: m5stack-atom
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+  baud_rate: 0
+
+# Concurrency guard for IR (prevents overlapping sends)
+globals:
+  - id: ir_busy
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+api:
+  encryption:
+    key: "zrAdXmH0/NW3OXKp8N0jft8woveyAPkpyi5zCBzJuak="
+  actions:
+    # Home Assistant action: esphome.atom_lite_ir_send_nec
+    - action: ir_send_nec
+      supports_response: status
+      variables:
+        address: int
+        command: int
+        send_times: int
+      then:
+        - if:
+            condition:
+              lambda: |-
+                const bool addr_ok = (address >= 0) && (address <= 0xFFFF);
+                const bool cmd_ok  = (command >= 0) && (command <= 0xFFFF);
+                return addr_ok && cmd_ok;
+            then:
+              - if:
+                  condition:
+                    lambda: 'return !id(ir_busy);'
+                  then:
+                    - lambda: 'id(ir_busy) = true;'
+                    - remote_transmitter.transmit_nec:
+                        transmitter_id: atom_ir
+                        address: !lambda 'return (uint16_t) address;'
+                        command: !lambda 'return (uint16_t) command;'
+                        repeat:
+                          times: !lambda |-
+                            if (send_times < 1) return 1U;
+                            if (send_times > 20) return 20U;
+                            return (uint32_t) send_times;
+                          wait_time: 10ms
+                    - api.respond:
+                        success: true
+                  else:
+                    - logger.log:
+                        level: WARN
+                        format: "ir_send_nec: busy (address=%d command=%d)"
+                        args: [ 'address', 'command' ]
+                    - api.respond:
+                        success: false
+                        error_message: "IR transmitter busy"
+            else:
+              - logger.log:
+                  level: ERROR
+                  format: "ir_send_nec: invalid args address=%d command=%d"
+                  args: [ 'address', 'command' ]
+              - api.respond:
+                  success: false
+                  error_message: !lambda |-
+                    char buf[96];
+                    snprintf(buf, sizeof(buf), "invalid args address=%d command=%d", address, command);
+                    return std::string(buf);
+
+    # Home Assistant action: esphome.atom_lite_ir_send_pronto
+    - action: ir_send_pronto
+      supports_response: status
+      variables:
+        data: string
+        send_times: int
+      then:
+        - if:
+            condition:
+              lambda: |-
+                return (!data.empty() && data.size() <= 1024);
+            then:
+              - if:
+                  condition:
+                    lambda: 'return !id(ir_busy);'
+                  then:
+                    - lambda: 'id(ir_busy) = true;'
+                    - remote_transmitter.transmit_pronto:
+                        transmitter_id: atom_ir
+                        data: !lambda 'return data;'
+                        repeat:
+                          times: !lambda |-
+                            if (send_times < 1) return 1U;
+                            if (send_times > 10) return 10U;
+                            return (uint32_t) send_times;
+                          wait_time: 10ms
+                    - api.respond:
+                        success: true
+                  else:
+                    - logger.log:
+                        level: WARN
+                        format: "ir_send_pronto: busy (data_len=%u)"
+                        args: [ '(unsigned) data.size()' ]
+                    - api.respond:
+                        success: false
+                        error_message: "IR transmitter busy"
+            else:
+              - logger.log:
+                  level: ERROR
+                  format: "ir_send_pronto: invalid args data_len=%u"
+                  args: [ '(unsigned) data.size()' ]
+              - api.respond:
+                  success: false
+                  error_message: !lambda |-
+                    char buf[96];
+                    snprintf(buf, sizeof(buf), "invalid args data_len=%u", (unsigned) data.size());
+                    return std::string(buf);
+
+ota:
+  - platform: esphome
+    password: "946e8243f5520c12bd0a32651e24a86e"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+
+safe_mode:
+
+# BLE Proxy
+esp32_ble_tracker:
+
+bluetooth_proxy:
+  active: true
+  cache_services: true
+  connection_slots: 3
+
+i2c:
+  sda: ${pin_i2c_sda}
+  scl: ${pin_i2c_scl}
+  scan: true
+  frequency: 400kHz
+
+button:
+  - platform: restart
+    name: "Atom Lite Restart"
+  - platform: safe_mode
+    name: "Atom Lite Restart (Safe Mode)"
+  - platform: template
+    name: "Atom Lite IR Clear Busy"
+    entity_category: diagnostic
+    disabled_by_default: true
+    on_press:
+      - lambda: 'id(ir_busy) = false;'
+      - logger.log:
+          level: WARN
+          format: "IR busy flag manually cleared"
+
+# Stateless button events for Home Assistant automations (no light coupling)
+event:
+  - platform: template
+    name: "Atom Button Action"
+    id: atom_button_action
+    device_class: button
+    event_types:
+      - single_click
+      - double_click
+      - long_press
+
+# On-board IR blaster (Atom Lite IR is on GPIO12)
+# RMT memory on ESP32 is shared; explicitly allocate to avoid contention with the RGB LED.
+remote_transmitter:
+  id: atom_ir
+  pin: ${pin_ir_tx}
+  carrier_duty_percent: 50%
+  rmt_symbols: 448
+  on_complete:
+    then:
+      - lambda: 'id(ir_busy) = false;'
+
+binary_sensor:
+  - platform: status
+    name: "Atom Lite Status"
+
+  - platform: gpio
+    pin:
+      number: ${pin_button}
+      mode: INPUT
+      inverted: true
+    name: "Atom Button"
+    id: atom_button
+    filters:
+      - delayed_on: 50ms
+      - delayed_off: 50ms
+    on_multi_click:
+      - timing:
+          - ON for at most 0.8s
+          - OFF for at most 0.5s
+          - ON for at most 0.8s
+          - OFF for at least 0.2s
+        then:
+          - logger.log: "Double Clicked"
+          - event.trigger:
+              id: atom_button_action
+              event_type: double_click
+
+      - timing:
+          - ON for at least 0.8s
+        then:
+          - logger.log: "Long Press"
+          - event.trigger:
+              id: atom_button_action
+              event_type: long_press
+
+      - timing:
+          - ON for at most 0.8s
+          - OFF for at least 0.2s
+        then:
+          - logger.log: "Single Click"
+          - event.trigger:
+              id: atom_button_action
+              event_type: single_click
+
+light:
+  - platform: esp32_rmt_led_strip
+    name: "Atom RGB Light"
+    id: atom_light
+    pin: ${pin_rgb}
+    num_leds: 1
+    rgb_order: GRB
+    chipset: SK6812
+    restore_mode: RESTORE_DEFAULT_OFF
+    # Keep LED RMT footprint minimal; reserve RMT capacity for IR (especially long Pronto).
+    rmt_symbols: 64
+    max_refresh_rate: 20ms
+    use_psram: false
+    effects:
+      - random:
+          name: "Random"
+          transition_length: 1s
+          update_interval: 1s
+
+debug:
+  update_interval: 30s
+
+sensor:
+  - platform: uptime
+    name: "Atom Lite Uptime"
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: wifi_signal
+    name: "Atom Lite WiFi RSSI"
+    update_interval: 60s
+    entity_category: diagnostic
+
+  - platform: internal_temperature
+    name: "Atom Lite Internal Temperature"
+    update_interval: 30s
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  # Replacement for invalid binary_sensor.template update_interval
+  - platform: template
+    name: "Atom Lite IR Busy"
+    id: atom_ir_busy
+    lambda: |-
+      return id(ir_busy) ? 1.0f : 0.0f;
+    update_interval: 500ms
+    accuracy_decimals: 0
+    unit_of_measurement: ""
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: debug
+    free:
+      name: "Atom Lite Heap Free"
+      entity_category: diagnostic
+      disabled_by_default: true
+    block:
+      name: "Atom Lite Heap Max Block"
+      entity_category: diagnostic
+      disabled_by_default: true
+    loop_time:
+      name: "Atom Lite Loop Time"
+      entity_category: diagnostic
+      disabled_by_default: true
+    cpu_frequency:
+      name: "Atom Lite CPU Frequency"
+      entity_category: diagnostic
+      disabled_by_default: true
+
+text_sensor:
+  - platform: version
+    name: "Atom Lite ESPHome Version"
+    hide_timestamp: true
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  - platform: debug
+    device:
+      name: "Atom Lite Device Info"
+      entity_category: diagnostic
+      disabled_by_default: true
+    reset_reason:
+      name: "Atom Lite Reset Reason"
+      entity_category: diagnostic
+      disabled_by_default: true
+
+  - platform: wifi_info
+    ip_address:
+      name: "Atom Lite IP"
+      entity_category: diagnostic
+    ssid:
+      name: "Atom Lite SSID"
+      entity_category: diagnostic
+      disabled_by_default: true
+    bssid:
+      name: "Atom Lite BSSID"
+      entity_category: diagnostic
+      disabled_by_default: true
+    mac_address:
+      name: "Atom Lite MAC"
+      entity_category: diagnostic
+      disabled_by_default: true
+    dns_address:
+      name: "Atom Lite DNS"
+      entity_category: diagnostic
+      disabled_by_default: true
+    power_save_mode:
+      name: "Atom Lite WiFi Power Save"
+      entity_category: diagnostic
+      disabled_by_default: true
