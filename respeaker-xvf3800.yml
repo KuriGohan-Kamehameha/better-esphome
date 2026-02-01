@@ -1390,14 +1390,7 @@ speaker:
     sample_rate: 48000
     bits_per_sample: 16
 
-sendspin:
-  id: sendspin_hub
-  task_stack_in_psram: true
-  kalman_process_error: 0.01
-
 media_source:
-  - platform: sendspin
-    id: sendspin_source
   - platform: http_request
     id: http_source
     buffer_size: 500000
@@ -1430,8 +1423,6 @@ media_source:
         file: ${error_cloud_expired_sound_file}
 
 media_player:
-  - platform: sendspin
-    id: sendspin_group_media_player
   - platform: speaker_source
     id: external_media_player
     name: Media Player
@@ -1451,7 +1442,6 @@ media_player:
     sources:
       - file_source
       - http_source
-      - sendspin_source
     on_mute:
       - delay: 100ms  # Debounce
       - script.execute: control_leds_volume_changed
@@ -1532,7 +1522,7 @@ external_components:
       type: git
       url: https://github.com/esphome/esphome
       ref: dev
-    components: [mdns, sendspin]
+    components: [mdns]
     refresh: never
   - source:
       # https://github.com/esphome/esphome/pull/12429
