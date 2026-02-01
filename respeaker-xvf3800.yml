@@ -354,7 +354,6 @@ switch:
       - lambda: id(timer_ringing_state) = false;
       # Disable stop wake word
       - micro_wake_word.disable_model: stop
-      - script.execute: disable_repeat
       # Stop any current annoucement (ie: stop the timer ring mid playback)
       - if:
           condition:
@@ -1125,32 +1124,21 @@ script:
 
   # Script executed when the timer is ringing, to playback sounds.
   - id: ring_timer
+    mode: restart
     then:
-      - script.execute: enable_repeat_one
-      - script.execute:
-          id: play_sound
-          priority: true
-          sound_file: "timer_finished_sound"
-
-  # Script executed when the timer is ringing, to repeat the timer finished sound.
-  - id: enable_repeat_one
-    then:
-      - media_player.repeat:
-          id: external_media_player
-          mode: ONE
-      # Turn on the repeat mode and pause for 500 ms between playlist items/repeats
-      - lambda: |-
-            id(external_media_player)->set_playlist_delay_ms(1, 500);
-
-  # Script execute when the timer is done ringing, to disable repeat mode.
-  - id: disable_repeat
-    then:
-      # Turn off the repeat mode and pause for 0 ms between playlist items/repeats
-      - media_player.repeat:
-          id: external_media_player
-          mode: OFF
-      - lambda: |-
-            id(external_media_player)->set_playlist_delay_ms(1, 0);
+      - while:
+          condition:
+            switch.is_on: timer_ringing
+          then:
+            - script.execute:
+                id: play_sound
+                priority: true
+                sound_file: "timer_finished_sound"
+            - wait_until:
+                not:
+                  media_player.is_announcing:
+                    id: external_media_player
+            - delay: 500ms
 
   # Script executed when we want to play sounds on the device.
   - id: play_sound
