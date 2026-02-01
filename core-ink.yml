@@ -1,0 +1,163 @@
+substitutions:
+  devicename: "core-ink"
+  friendly_name: "Core Ink"
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/witasekl/gdew0154m09
+      ref: master
+    components: [ gdew0154m09 ]
+
+esphome:
+  name: ${devicename}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: true
+  platformio_options:
+    upload_speed: 1500000
+    # Critical: Free GPIO9/10 from Quad flash so CS on GPIO9 can work.
+    board_build.flash_mode: dio
+
+esp32:
+  board: m5stack-coreink
+  framework:
+    type: arduino
+
+logger:
+  level: INFO
+  baud_rate: 0
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+
+captive_portal:
+
+web_server:
+  port: 80
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: America/Toronto
+    on_time_sync:
+      then:
+        - component.update: my_display
+
+i2c:
+  - id: bus_int
+    sda: GPIO21
+    scl: GPIO22
+  - id: port_a
+    sda: GPIO32
+    scl: GPIO33
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+display:
+  - platform: waveshare_epaper
+    id: my_display
+    cs_pin: GPIO9
+    dc_pin: GPIO15
+    busy_pin:
+      number: GPIO4
+      inverted: true
+    reset_pin: GPIO0
+    model: 1.54in-m5coreink-m09
+    update_interval: 8s
+    lambda: |-
+      it.print(5, 5, id(helvetica_20), "ESPHome");
+
+font:
+  - file: "gfonts://Roboto"
+    id: helvetica_20
+    size: 20
+
+# Make the display change even without time (uptime ticks).
+interval:
+  - interval: 60s
+    then:
+      - component.update: my_display
+
+binary_sensor:
+  - platform: gpio
+    name: "${friendly_name} PIR"
+    device_class: motion
+    pin:
+      number: GPIO36
+      mode: INPUT
+
+  - platform: gpio
+    name: "${friendly_name} Button Up"
+    pin:
+      number: GPIO37
+      mode: INPUT
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+      - delayed_off: 50ms
+    on_click:
+      then:
+        - component.update: my_display
+
+  - platform: gpio
+    name: "${friendly_name} Button In"
+    pin:
+      number: GPIO38
+      mode: INPUT
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+      - delayed_off: 50ms
+    on_click:
+      then:
+        - component.update: my_display
+
+  - platform: gpio
+    name: "${friendly_name} Button Down"
+    pin:
+      number: GPIO39
+      mode: INPUT
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+      - delayed_off: 50ms
+    on_click:
+      then:
+        - component.update: my_display
+
+sensor:
+  - platform: scd4x
+    i2c_id: port_a
+    address: 0x62
+    co2:
+      name: "${friendly_name} CO2"
+      accuracy_decimals: 0
+    temperature:
+      name: "${friendly_name} Temp"
+      accuracy_decimals: 1
+    humidity:
+      name: "${friendly_name} Humidity"
+      accuracy_decimals: 0
+    update_interval: 30s
+
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi RSSI"
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: coreink_ip
+      name: "${friendly_name} IP"
+    ssid:
+      name: "${friendly_name} SSID"
