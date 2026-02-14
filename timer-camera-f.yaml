@@ -1,6 +1,14 @@
+substitutions:
+  device_id: timer-camera-f
+  device_label: Timer Cam F
+  cam_label: Cam
+  led_label: LED
+  batt_v_label: Batt V
+  batt_pct_label: Batt %
+
 esphome:
-  name: timer-camera-f
-  friendly_name: Timer Camera F
+  name: ${device_id}
+  friendly_name: ${device_label}
 
   on_boot:
     priority: 600
@@ -46,9 +54,9 @@ i2c:
     sda: GPIO25
     scl: GPIO23
 
-# TimerCamera-F camera config
+# Timer Cam F camera config
 esp32_camera:
-  name: "TimerCamera-F Camera"
+  name: "${cam_label}"
   external_clock:
     pin: GPIO27
     frequency: 20MHz
@@ -81,7 +89,7 @@ output:
 light:
   - platform: monochromatic
     output: blue_led
-    name: "TimerCamera-F LED"
+    name: "${led_label}"
     restore_mode: RESTORE_DEFAULT_ON
 
 # Battery read and percentage
@@ -90,14 +98,14 @@ sensor:
     pin: GPIO38
     attenuation: 12dB
     id: battery_voltage
-    name: "TimerCamera-F Battery Voltage"
+    name: "${batt_v_label}"
     update_interval: 30s
     filters:
       - multiply: 1.51
 
   - platform: template
     id: battery_percent
-    name: "TimerCamera-F Battery %"
+    name: "${batt_pct_label}"
     unit_of_measurement: "%"
     accuracy_decimals: 0
     lambda: |-
