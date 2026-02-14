@@ -16,6 +16,7 @@ substitutions:
   text_y_position: "it.get_height() / 2 + 35"
   icon_x_position: "it.get_width() / 2"
   icon_y_position: "it.get_height() / 2 - 15"
+  pin_ir_tx: GPIO4
 
 # Enable logging
 logger:
@@ -42,6 +43,18 @@ globals:
   - id: bg_blue
     type: float
     initial_value: '1.0'
+  - id: ir_tmp_addr
+    type: uint16_t
+    restore_value: no
+    initial_value: '0'
+  - id: ir_tmp_cmd
+    type: uint16_t
+    restore_value: no
+    initial_value: '0'
+  - id: ir_tmp_pronto
+    type: std::string
+    restore_value: no
+    initial_value: '""'
 
 wifi:
   ssid: !secret wifi_ssid
@@ -293,6 +306,228 @@ text:
     on_value:
       then:
         - component.update: display_1
+
+  - platform: template
+    name: "Atom S3 IR NEC Address"
+    id: atom_ir_nec_address
+    mode: text
+    optimistic: true
+    restore_value: true
+    min_length: 1
+    max_length: 10
+    initial_value: "0x0000"
+    on_value:
+      then:
+        - lambda: |-
+            std::string s = x;
+            auto trim = [](std::string &v) {
+              while (!v.empty() && (v.front() == ' ' || v.front() == '\t' || v.front() == '\r' || v.front() == '\n')) v.erase(v.begin());
+              while (!v.empty() && (v.back()  == ' ' || v.back()  == '\t' || v.back()  == '\r' || v.back()  == '\n')) v.pop_back();
+            };
+            std::string t = s;
+            trim(t);
+            if (t != s) {
+              auto call = id(atom_ir_nec_address).make_call();
+              call.set_value(t);
+              call.perform();
+            }
+
+  - platform: template
+    name: "Atom S3 IR NEC Command"
+    id: atom_ir_nec_command
+    mode: text
+    optimistic: true
+    restore_value: true
+    min_length: 1
+    max_length: 10
+    initial_value: "0x0000"
+    on_value:
+      then:
+        - lambda: |-
+            std::string s = x;
+            auto trim = [](std::string &v) {
+              while (!v.empty() && (v.front() == ' ' || v.front() == '\t' || v.front() == '\r' || v.front() == '\n')) v.erase(v.begin());
+              while (!v.empty() && (v.back()  == ' ' || v.back()  == '\t' || v.back()  == '\r' || v.back()  == '\n')) v.pop_back();
+            };
+            std::string t = s;
+            trim(t);
+            if (t != s) {
+              auto call = id(atom_ir_nec_command).make_call();
+              call.set_value(t);
+              call.perform();
+            }
+
+  - platform: template
+    name: "Atom S3 IR Pronto Data"
+    id: atom_ir_pronto_data
+    mode: text
+    optimistic: true
+    restore_value: true
+    min_length: 255
+    max_length: 255
+    initial_value: ""
+    on_value:
+      then:
+        - lambda: |-
+            std::string raw = x;
+            std::string cleaned;
+            cleaned.reserve(raw.size());
+            bool last_space = true;
+
+            for (char c : raw) {
+              if (c == '\r' || c == '\n' || c == '\t') c = ' ';
+              if (c == ' ') {
+                if (!last_space) cleaned.push_back(' ');
+                last_space = true;
+              } else {
+                cleaned.push_back(c);
+                last_space = false;
+              }
+            }
+            while (!cleaned.empty() && cleaned.back() == ' ') cleaned.pop_back();
+            size_t start = 0;
+            while (start < cleaned.size() && cleaned[start] == ' ') start++;
+            if (start > 0) cleaned.erase(0, start);
+
+            if (cleaned != raw) {
+              auto call = id(atom_ir_pronto_data).make_call();
+              call.set_value(cleaned);
+              call.perform();
+            }
+
+number:
+  - platform: template
+    name: "Atom S3 IR NEC Repeats"
+    id: atom_ir_nec_repeats
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    min_value: 1
+    max_value: 20
+    step: 1
+    mode: box
+
+  - platform: template
+    name: "Atom S3 IR Pronto Repeats"
+    id: atom_ir_pronto_repeats
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    min_value: 1
+    max_value: 10
+    step: 1
+    mode: box
+
+button:
+  - platform: template
+    name: "Atom S3 IR Send NEC"
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              auto trim = [](std::string &v) {
+                while (!v.empty() && (v.front() == ' ' || v.front() == '\t' || v.front() == '\r' || v.front() == '\n')) v.erase(v.begin());
+                while (!v.empty() && (v.back()  == ' ' || v.back()  == '\t' || v.back()  == '\r' || v.back()  == '\n')) v.pop_back();
+              };
+              auto parse_u32 = [](const std::string &s, uint32_t minv, uint32_t maxv, uint32_t &out) -> bool {
+                if (s.empty()) return false;
+                if (s[0] == '-') return false;
+                char *end = nullptr;
+                const unsigned long v = strtoul(s.c_str(), &end, 0);
+                if (end == nullptr || end == s.c_str() || *end != '\0') return false;
+                if (v < minv || v > maxv) return false;
+                out = (uint32_t) v;
+                return true;
+              };
+
+              std::string s_addr = id(atom_ir_nec_address).state;
+              std::string s_cmd  = id(atom_ir_nec_command).state;
+              trim(s_addr);
+              trim(s_cmd);
+
+              uint32_t addr = 0;
+              uint32_t cmd = 0;
+              if (!parse_u32(s_addr, 0, 0xFFFF, addr) || !parse_u32(s_cmd, 0, 0xFFFF, cmd)) {
+                ESP_LOGE("ir", "NEC input invalid (addr='%s' cmd='%s')", s_addr.c_str(), s_cmd.c_str());
+                return false;
+              }
+
+              id(ir_tmp_addr) = (uint16_t) addr;
+              id(ir_tmp_cmd) = (uint16_t) cmd;
+              return true;
+          then:
+            - remote_transmitter.transmit_nec:
+                transmitter_id: atom_ir
+                address: !lambda 'return id(ir_tmp_addr);'
+                command: !lambda 'return id(ir_tmp_cmd);'
+                repeat:
+                  times: !lambda |-
+                    float f_rep = id(atom_ir_nec_repeats).state;
+                    if (f_rep != f_rep) f_rep = 1.0f;
+                    int rep = (int) (f_rep + 0.5f);
+                    if (rep < 1) rep = 1;
+                    if (rep > 20) rep = 20;
+                    return (uint32_t) rep;
+                  wait_time: 10ms
+
+  - platform: template
+    name: "Atom S3 IR Send Pronto"
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              std::string raw = id(atom_ir_pronto_data).state;
+              std::string cleaned;
+              cleaned.reserve(raw.size());
+              bool last_space = true;
+              for (char c : raw) {
+                if (c == '\r' || c == '\n' || c == '\t') c = ' ';
+                if (c == ' ') {
+                  if (!last_space) cleaned.push_back(' ');
+                  last_space = true;
+                } else {
+                  cleaned.push_back(c);
+                  last_space = false;
+                }
+              }
+              while (!cleaned.empty() && cleaned.back() == ' ') cleaned.pop_back();
+              size_t start = 0;
+              while (start < cleaned.size() && cleaned[start] == ' ') start++;
+              if (start > 0) cleaned.erase(0, start);
+
+              if (cleaned.empty()) {
+                ESP_LOGE("ir", "Pronto data empty");
+                return false;
+              }
+              if (cleaned.size() > 1024) {
+                ESP_LOGE("ir", "Pronto too long (len=%u)", (unsigned) cleaned.size());
+                return false;
+              }
+
+              id(ir_tmp_pronto) = cleaned;
+              return true;
+          then:
+            - remote_transmitter.transmit_pronto:
+                transmitter_id: atom_ir
+                data: !lambda 'return id(ir_tmp_pronto);'
+                repeat:
+                  times: !lambda |-
+                    float f_rep = id(atom_ir_pronto_repeats).state;
+                    if (f_rep != f_rep) f_rep = 1.0f;
+                    int rep = (int) (f_rep + 0.5f);
+                    if (rep < 1) rep = 1;
+                    if (rep > 10) rep = 10;
+                    return (uint32_t) rep;
+                  wait_time: 10ms
+
+# On-board IR blaster (Atom S3 IR is on GPIO4)
+remote_transmitter:
+  id: atom_ir
+  pin: ${pin_ir_tx}
+  carrier_duty_percent: 50%
+  rmt_symbols: 448
 
 # Mapping component: Maps friendly names to unicode glyphs
 mapping:
