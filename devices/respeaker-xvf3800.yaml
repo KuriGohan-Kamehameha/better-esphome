@@ -113,11 +113,6 @@ esp32:
       CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: "y"
       CONFIG_MBEDTLS_SSL_PROTO_TLS1_3: "y"  # TLS1.3 support isn't enabled by default in IDF 5.1.5
 
-    advanced:
-      assertion_level: ENABLE
-      compiler_optimization: DEBUG
-      enable_ota_rollback: true
-
 wifi:
   id: wifi_id
   fast_connect: ${hidden_ssid}
