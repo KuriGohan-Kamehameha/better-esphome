@@ -1,150 +1,43 @@
 # Better ESPHome
 
-A collection of optimized ESPHome configuration files for various M5Stack and ESP32 devices.
+Optimized ESPHome configurations for M5Stack and ESP32 devices, including voice assistants and cameras.
 
-## Overview
+## Device Configurations
 
-This repository contains ready-to-use ESPHome configurations for popular ESP32-based devices, with a focus on M5Stack products and voice assistant capabilities.
+All configurations are located in the `devices/` directory.
 
-## Available Device Configurations
+| Device | Config Path | Description |
+|--------|-------------|-------------|
+| **Atom Echo** | [`devices/atom-echo.yaml`](devices/atom-echo.yaml) | Voice assistant with media player & RGB. |
+| **Atom Lite** | [`devices/atom-lite.yaml`](devices/atom-lite.yaml) | IR blaster & RGB controller. |
+| **Atom S3** | [`devices/atom-s3.yaml`](devices/atom-s3.yaml) | ESP32-S3 with split display color/backlight control. |
+| **Core Ink** | [`devices/core-ink.yaml`](devices/core-ink.yaml) | E-ink display optimization. |
+| **ReSpeaker** | [`devices/respeaker-xvf3800.yaml`](devices/respeaker-xvf3800.yaml) | Advanced voice processing kit. |
+| **Timer Camera F** | [`devices/timer-camera-f/`](devices/timer-camera-f/) | Contains `stream` (video) and `mailbox` (low power) variants. |
 
-### M5Stack Devices
+## Feature Highlights
 
-- **atom-echo.yml** - M5Stack Atom Echo
-  - Voice assistant ready configuration
-  - Built-in microphone and speaker support
-  - RGB LED control
-  - Button input
-
-- **atom-lite.yml** - M5Stack Atom Lite
-  - IR blaster configuration
-  - RGB LED (WS2812)
-  - Button input
-  - I2C support
-
-- **atom-s3.yaml** - M5Stack Atom S3
-  - ESP32-S3 based configuration
-  - Advanced features for the S3 platform
-
-- **core-ink.yml** - M5Stack Core Ink
-  - E-ink display configuration
-  - Low power consumption setup
-
-- **timer-camera-f.yaml** - M5Stack Timer Camera F
-  - Camera module configuration
-  - Timer and scheduling features
-
-### Other Devices
-
-- **respeaker-xvf3800.yml** - ReSpeaker XVF3800
-  - Advanced voice processing
-  - Multi-microphone array support
-
-## Prerequisites
-
-- [ESPHome](https://esphome.io/) installed (minimum version 2025.5.0 or later depending on device)
-- Home Assistant (optional, for integration)
-- Wi-Fi network credentials
-- Device-specific hardware
+- **Atom S3 Display**: Controls are split into `light.screen_colors` (RGB) and `light.screen_backlight` (Brightness) for independent control.
+  - *Tip*: Use `light.turn_on` service with `rgb_color` for color, and `brightness_pct` for backlight intensity.
+- **Timer Camera F**:
+  - `timer-camera-f-stream.yaml`: optimized for continuous video streaming.
+  - `timer-camera-f-mailbox.yaml`: optimized for deep sleep and triggered capture (e.g. smart mailbox).
 
 ## Usage
 
-### Atom S3 Display Control
-
-The Atom S3 display uses a split configuration for optimal control:
-1. **Screen Color** (`light.screen_colors`) - RGB light that controls the *color* only.
-2. **Screen Backlight** (`light.screen_backlight`) - Monochromatic light that controls the *brightness* only.
-
-**Why split?**
-This ensures that changing the color does not accidentally dim the display, and allows independent brightness control without affecting color saturation.
-
-#### Automation Examples
-
-To control these lights in Home Assistant automations, use the `service: light.turn_on` action (avoid the "Device" action if possible to ensure correct parameter passing).
-
-**Set Screen to Orange:**
-```yaml
-action: light.turn_on
-target:
-  entity_id: light.atom_s3_screen_color
-data:
-  rgb_color: [255, 165, 0]
-  brightness: 255 # Keep internal brightness maxed for pure color
-```
-
-**Set Backlight to 50%:**
-```yaml
-action: light.turn_on
-target:
-  entity_id: light.atom_s3_screen_backlight
-data:
-  brightness_pct: 50
-```
-
-**Turn Off Display:**
-```yaml
-action: light.turn_off
-target:
-  entity_id: light.atom_s3_screen_backlight
-```
-
-1. **Clone or download** this repository
-2. **Choose** the configuration file for your device
-3. **Update** the following in the configuration:
-   - Wi-Fi credentials (in `wifi:` section or `secrets.yaml`)
-   - API encryption key (generate new if needed)
-   - OTA password (if applicable)
-   - Device-specific pins or settings
-4. **Flash** the configuration to your device:
-   ```bash
-   esphome run atom-echo.yml  # Replace with your config file
+1. Create a `secrets.yaml` in the root:
+   ```yaml
+   wifi_ssid: "Your_SSID"
+   wifi_password: "Your_Password"
+   # ... other secrets
    ```
 
-## Configuration
+2. Flash a device:
+   ```bash
+   esphome run devices/atom-s3.yaml
+   ```
 
-### Secrets File
+## Requirements
+- ESPHome 2025.5.0+
+- Python 3.9+ (if running locally)
 
-Create a `secrets.yaml` file in the same directory with your sensitive information:
-
-```yaml
-wifi_ssid: "Your_WiFi_SSID"
-wifi_password: "Your_WiFi_Password"
-```
-
-### First Time Setup
-
-For initial device flashing, you may need to connect via USB:
-
-```bash
-esphome run atom-echo.yml --device /dev/ttyUSB0
-```
-
-After the initial flash, OTA (Over-The-Air) updates can be used.
-
-## Features
-
-These configurations include:
-
-- ✅ Safe mode for recovery
-- ✅ Fallback AP for troubleshooting
-- ✅ OTA updates
-- ✅ Home Assistant API integration
-- ✅ Optimized settings for each device
-- ✅ Voice assistant support (where applicable)
-- ✅ RGB LED control
-- ✅ Button inputs
-
-## Support
-
-For issues or questions:
-- Check the [ESPHome documentation](https://esphome.io/)
-- Review device-specific datasheets
-- Open an issue in this repository
-
-## License
-
-These configurations are provided as-is for educational and personal use.
-
-## Contributing
-
-Feel free to submit improvements, bug fixes, or additional device configurations via pull requests.

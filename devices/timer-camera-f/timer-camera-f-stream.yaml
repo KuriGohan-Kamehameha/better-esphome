@@ -1,8 +1,8 @@
 substitutions:
-  device_id: timer-camera-f
-  device_label: Timer Cam F
-  cam_label: Cam
-  led_label: LED
+  device_id: timer-camera-f-stream
+  device_label: Streaming Camera
+  cam_label: Streaming Cam
+  led_label: Streaming LED
 
 esphome:
   name: ${device_id}
