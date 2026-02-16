@@ -101,7 +101,7 @@ esp32:
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
       CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB: "y"
 
-      # Moves instructions and read only data from flash into PSRAM on boot.
+      # Moves instructions and read-only data from flash into PSRAM on boot.
       # Both enabled allows instructions to execute while a flash operation is in progress without needing to be placed in IRAM.
       # Considerably speeds up mWW at the cost of using more PSRAM.
       CONFIG_SPIRAM_RODATA: "y"
@@ -112,6 +112,11 @@ esp32:
 
       CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: "y"
       CONFIG_MBEDTLS_SSL_PROTO_TLS1_3: "y"  # TLS1.3 support isn't enabled by default in IDF 5.1.5
+
+    advanced:
+      assertion_level: ENABLE
+      compiler_optimization: DEBUG
+      enable_ota_rollback: true
 
 wifi:
   id: wifi_id
@@ -178,7 +183,7 @@ api:
         - lambda: |-
             const std::string s = alarm_time_hh_mm;
             const auto reject = [&](const char *reason) {
-              ESP_LOGW("alarm", "Rejected alarm time (%s): %s", reason, s.c_str());
+              ESP_LOGW("alarm", "Rejected alarm time (%s): %s.", reason, s.c_str());
             };
 
             if (s.size() != 5 || s[2] != ':') { reject("format"); return; }
@@ -206,13 +211,13 @@ api:
             // - Reasonable length
             // - Printable ASCII only (no control chars)
             if (tz.empty() || tz.size() > 80) {
-              ESP_LOGW("tz", "Rejected TZ (empty/too long)");
+              ESP_LOGW("tz", "Rejected TZ: empty or too long.");
               return;
             }
             for (char c : tz) {
               const unsigned char uc = static_cast<unsigned char>(c);
               if (uc < 32 || uc > 126) {
-                ESP_LOGW("tz", "Rejected TZ (non-printable chars)");
+                ESP_LOGW("tz", "Rejected TZ: non-printable characters present.");
                 return;
               }
             }
@@ -234,17 +239,21 @@ ota:
   - platform: esphome
     password: "bdecb5123ed84595432e996ea1fc8b80"
 
+safe_mode:
+  boot_is_good_after: 1min
+  reboot_timeout: 5min
+
 i2c:
   - id: internal_i2c
     sda: GPIO5
     scl: GPIO6
     scan: true
-    frequency: 100kHz
+    frequency: 400kHz
 
 psram:
   mode: octal
   speed: 80MHz
-  ignore_not_found: false  # The VPE has PSRAM, so this is safe. Allows configuring WiFi driver to use more resources (done automatically by the speaker media player)
+  ignore_not_found: false  # The VPE has PSRAM, so this is safe — allows configuring the Wi-Fi driver to use more resources (done automatically by the speaker media player).
 
 globals:
   - id: user_led_ring_color_r
@@ -480,7 +489,7 @@ text:
       - lambda: |-
           const std::string s = x;
           const auto reject = [&](const char *reason) {
-            ESP_LOGW("alarm", "Rejected alarm time (%s): %s", reason, s.c_str());
+            ESP_LOGW("alarm", "Rejected alarm time (%s): %s.", reason, s.c_str());
             id(alarm_time_input).publish_state(id(saved_alarm_time));
           };
 
@@ -875,7 +884,7 @@ script:
           }
           id(respeaker).set_led_ring(colors);
 
-  # Master script controlling the LEDs, based on different conditions : initialization in progress, wifi and api connected and voice assistant phase.
+  # Master script controlling the LEDs, based on different conditions: initialization in progress, Wi-Fi and API connection state, and voice-assistant phase.
   # For simplicity and reusability, the script calls child scripts defined below.
   # This script will be called every time one of these conditions is changing.
   - id: control_leds
@@ -1296,12 +1305,12 @@ script:
           if (s.empty() || s == "Not set") return;
 
           if (s.size() != 5 || s[2] != ':') {
-            ESP_LOGW("alarm", "Stored alarm time invalid (format): %s", s.c_str());
+            ESP_LOGW("alarm", "Stored alarm time invalid (format): %s.", s.c_str());
             return;
           }
           for (size_t i : {0u, 1u, 3u, 4u}) {
             if (!isdigit(static_cast<unsigned char>(s[i]))) {
-              ESP_LOGW("alarm", "Stored alarm time invalid (non-digit): %s", s.c_str());
+              ESP_LOGW("alarm", "Stored alarm time invalid (non-digit): %s.", s.c_str());
               return;
             }
           }
@@ -1309,7 +1318,7 @@ script:
           const int alarm_hour = (s[0] - '0') * 10 + (s[1] - '0');
           const int alarm_minute = (s[3] - '0') * 10 + (s[4] - '0');
           if (alarm_hour > 23 || alarm_minute > 59) {
-            ESP_LOGW("alarm", "Stored alarm time invalid (range): %s", s.c_str());
+            ESP_LOGW("alarm", "Stored alarm time invalid (range): %s.", s.c_str());
             return;
           }
 
@@ -1500,6 +1509,7 @@ media_player:
               decibel_reduction: 0
               duration: 1.0s
 
+# Using formatBCE integrations as the backbone for XVF3800 support (keeps firmware and components current).
 external_components:
   - source:
       type: git
@@ -1610,7 +1620,7 @@ micro_wake_word:
   microphone:
     microphone: i2s_mics
     channels: 1
-    # gain_factor: 4
+    gain_factor: 4
   stop_after_detection: false
   models:
     - model: https://github.com/kahrendt/microWakeWord/releases/download/okay_nabu_20241226.3/okay_nabu.json
