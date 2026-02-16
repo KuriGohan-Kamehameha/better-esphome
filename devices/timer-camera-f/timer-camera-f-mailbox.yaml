@@ -61,6 +61,7 @@ i2c:
 
 # Timer Cam F camera config (mailbox uses high-res capture)
 esp32_camera:
+  id: cam
   name: "${cam_label}"
   external_clock:
     pin: GPIO27
@@ -88,7 +89,7 @@ esp32_camera:
 http_request:
   id: http_client
   useragent: "esphome/${device_id}"
-  timeout: 15s
+  timeout: 30s
 
 # RTC to keep time
 time:
@@ -111,6 +112,7 @@ output:
   - platform: ledc
     id: blue_led
     pin: GPIO2
+    channel: 2  # avoid LEDC timer conflict with camera
   # Battery hold pin - MUST be HIGH for charging to work
   - platform: gpio
     id: batt_hold_pin
@@ -262,7 +264,7 @@ script:
       - wait_until:
           condition:
             lambda: 'return id(image_ready);'
-          timeout: 6s
+          timeout: 10s
 
       - if:
           condition:
