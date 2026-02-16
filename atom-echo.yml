@@ -141,6 +141,7 @@ i2s_audio:
 microphone:
   - platform: i2s_audio
     id: echo_microphone
+    i2s_audio_id: i2s_audio_bus
     i2s_din_pin: ${pin_i2s_din}
     adc_type: external
     pdm: true
@@ -150,6 +151,7 @@ microphone:
 speaker:
   - platform: i2s_audio
     id: echo_speaker
+    i2s_audio_id: i2s_audio_bus
     i2s_dout_pin: ${pin_i2s_dout}
     dac_type: external
     bits_per_sample: ${speaker_bits_per_sample}
@@ -165,7 +167,7 @@ media_player:
     announcement_pipeline:
       speaker: echo_speaker
       format: WAV
-    codec_support_enabled: false
+    codec_support_enabled: true
     buffer_size: 6000
     volume_min: 0.4
     files:

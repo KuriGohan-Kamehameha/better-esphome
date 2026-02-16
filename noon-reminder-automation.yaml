@@ -1,0 +1,29 @@
+alias: Noon Reminder
+description: ""
+triggers:
+  - trigger: time
+    at: "12:00:00"
+conditions: []
+actions:
+  - device_id: 5e01a064cec06b1b8f4d827e687eac38
+    domain: select
+    entity_id: bfcd05bccd61d5f4e3f971c240ae703f
+    type: select_option
+    option: Sunny
+  - device_id: 5e01a064cec06b1b8f4d827e687eac38
+    domain: text
+    entity_id: cbce925f849b8cb16a2d385f74c39a51
+    type: set_value
+    value: NOON
+  - service: light.turn_on
+    target:
+      entity_id: light.atom_s3_screen_color
+    data:
+      rgb_color: [255, 165, 0]
+      brightness: 255 # Ensure color "brightness" is maxed so color is pure
+  - service: light.turn_on
+    target:
+      entity_id: light.atom_s3_screen_backlight
+    data:
+      brightness_pct: 85
+mode: single

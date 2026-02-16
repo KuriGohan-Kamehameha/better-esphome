@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/CMakeFiles/bootloader"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/CMakeFiles/bootloader.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/CMakeFiles/bootloader-complete.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
+		},
+		{
+			"file" : "/Users/sat/better-esphome/.esphome/build/atom-lite/.pioenvs/atom-lite/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"bootloader"
+		],
+		"name" : "bootloader"
+	}
+}
