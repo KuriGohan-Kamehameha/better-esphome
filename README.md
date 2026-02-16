@@ -23,6 +23,27 @@ All configurations are located in the `devices/` directory.
   - `timer-camera-f-stream.yaml`: optimized for continuous video streaming.
   - `timer-camera-f-mailbox.yaml`: optimized for deep sleep and triggered capture (e.g. smart mailbox).
 
+## Custom Enhancements
+
+These configurations build upon and enhance the official ESPHome examples:
+
+**Atom Echo**
+- Extensive RGB color customization with pre-configured palettes and transitions.
+- Enhanced media player integration with Home Assistant.
+- Optimized audio routing and voice assistant tuning.
+
+**ReSpeaker XVF3800**
+- Significant improvements over the original formatBCE configuration, including:
+  - Updated voice processing pipeline with better VAD (Voice Activity Detection).
+  - Enhanced timezone handling with robust input validation.
+  - Improved audio stream quality and latency optimization.
+  - Better integration with Home Assistant voice assistant.
+  - Additional GPIO and I2C configurations for expanded peripheral support.
+
+**Atom S3**
+- Advanced display control with independent color and brightness management.
+- Optimized for both local and remote control scenarios.
+
 ## Usage
 
 1. Create a `secrets.yaml` in the root:
