@@ -212,8 +212,8 @@ display:
       auto icon_option = id(display_icon).state;
       const char* icon_char = id(icon_map)[icon_option.c_str()].c_str();
       
-      if (id(screen_colors).current_values.is_on()) {
-        // Light is ON -> Use the color from globals
+      if (id(screen_backlight).current_values.is_on()) {
+        // Backlight is ON -> Use the color from globals
         auto bg_color = Color(id(bg_red) * 255, id(bg_green) * 255, id(bg_blue) * 255);
         // Set text/icon color based on background brightness for contrast
         auto fg_color = (id(bg_red) * 0.299 + id(bg_green) * 0.587 + id(bg_blue) * 0.114) > 0.5 ? Color(0, 0, 0) : Color(255, 255, 255);
@@ -225,7 +225,7 @@ display:
         // Draw text
         it.printf($text_x_position, $text_y_position, id(my_font), fg_color, $text_align, "%s", id(display_text).state.c_str());
       } else {
-        // Light is OFF -> Black background, white text/icon
+        // Backlight is OFF -> Black background, white text/icon
         it.fill(Color(0, 0, 0));
         
         // Draw icon
@@ -251,51 +251,59 @@ binary_sensor:
     on_press:
       then:
         - logger.log: "Button Pressed!"
-        - light.toggle: screen_colors
+        - light.toggle: screen_backlight
     on_release:
       then:
         - logger.log: "Button Released!"
 
-# Virtual outputs to connect the RGB light to our globals
+# Virtual outputs for backlight brightness control
 output:
   - platform: ledc
     pin: 16 # LCD_BL -> G16
     id: backlight_output
     frequency: 1000 Hz
   - platform: template
-    id: red_output
+    id: output_red
     type: float
     write_action:
-      - lambda: |-
-          id(bg_red) = state;
+      - lambda: id(bg_red) = state;
   - platform: template
-    id: green_output
+    id: output_green
     type: float
     write_action:
-      - lambda: |-
-          id(bg_green) = state;
+      - lambda: id(bg_green) = state;
   - platform: template
-    id: blue_output
+    id: output_blue
     type: float
     write_action:
-      - lambda: |-
-          id(bg_blue) = state;
-          id(display_1).update();
+      - lambda: id(bg_blue) = state;
+      - component.update: display_1
 
-# Virtual RGB light that controls the outputs
+# RGB light for color control 
 light:
+  - platform: rgb
+    name: "Screen Color"
+    id: screen_colors
+    red: output_red
+    green: output_green
+    blue: output_blue
+    restore_mode: RESTORE_DEFAULT_ON
+    icon: mdi:palette
+    default_transition_length: 500ms
+    gamma_correct: 1.0
+    on_turn_on:
+      - component.update: display_1
+    on_turn_off:
+      - component.update: display_1
+    
+  # Separate backlight brightness control
   - platform: monochromatic
     name: "Screen Backlight"
     id: screen_backlight
     output: backlight_output
-    default_transition_length: 0s
     restore_mode: RESTORE_DEFAULT_ON
-  - platform: rgb
-    name: "Screen Colors"
-    id: screen_colors
-    red: red_output
-    green: green_output
-    blue: blue_output
+    icon: mdi:brightness-6
+    default_transition_length: 500ms
 text:
   - platform: template
     name: "Display Text"
@@ -527,7 +535,7 @@ remote_transmitter:
   id: atom_ir
   pin: ${pin_ir_tx}
   carrier_duty_percent: 50%
-  rmt_symbols: 448
+  rmt_symbols: 128
 
 # Mapping component: Maps friendly names to unicode glyphs
 mapping:

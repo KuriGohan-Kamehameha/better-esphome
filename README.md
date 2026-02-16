@@ -49,6 +49,45 @@ This repository contains ready-to-use ESPHome configurations for popular ESP32-b
 
 ## Usage
 
+### Atom S3 Display Control
+
+The Atom S3 display uses a split configuration for optimal control:
+1. **Screen Color** (`light.screen_colors`) - RGB light that controls the *color* only.
+2. **Screen Backlight** (`light.screen_backlight`) - Monochromatic light that controls the *brightness* only.
+
+**Why split?**
+This ensures that changing the color does not accidentally dim the display, and allows independent brightness control without affecting color saturation.
+
+#### Automation Examples
+
+To control these lights in Home Assistant automations, use the `service: light.turn_on` action (avoid the "Device" action if possible to ensure correct parameter passing).
+
+**Set Screen to Orange:**
+```yaml
+action: light.turn_on
+target:
+  entity_id: light.atom_s3_screen_color
+data:
+  rgb_color: [255, 165, 0]
+  brightness: 255 # Keep internal brightness maxed for pure color
+```
+
+**Set Backlight to 50%:**
+```yaml
+action: light.turn_on
+target:
+  entity_id: light.atom_s3_screen_backlight
+data:
+  brightness_pct: 50
+```
+
+**Turn Off Display:**
+```yaml
+action: light.turn_off
+target:
+  entity_id: light.atom_s3_screen_backlight
+```
+
 1. **Clone or download** this repository
 2. **Choose** the configuration file for your device
 3. **Update** the following in the configuration:
