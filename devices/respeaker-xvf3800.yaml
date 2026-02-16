@@ -1631,7 +1631,8 @@ micro_wake_word:
       id: stop
       internal: true
   vad:
-    probability_cutoff: 0.05
+    # Increased to reduce accidental/false wake-word detections (was 0.05)
+    probability_cutoff: 0.10
   on_wake_word_detected:
     # If the wake word is detected while the device is muted (possible with the software mute switch), do nothing.
     - if:
