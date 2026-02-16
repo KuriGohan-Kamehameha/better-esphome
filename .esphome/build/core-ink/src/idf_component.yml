@@ -1,0 +1,5 @@
+dependencies:
+  espressif/mdns:
+    version: 1.9.1
+  zorxx/multipart-parser:
+    version: 1.0.1
