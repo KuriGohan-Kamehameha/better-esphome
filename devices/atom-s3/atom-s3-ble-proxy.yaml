@@ -1,5 +1,5 @@
 esphome:
-  name: atom-s3
+  name: atom-s3-ble
   friendly_name: Atom S3
   min_version: 2025.12.0
   platformio_options:
