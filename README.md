@@ -11,6 +11,7 @@ All configurations are located in the `devices/` directory.
 | **Atom Echo** | [`devices/atom-echo.yaml`](devices/atom-echo.yaml) | Voice assistant with media player & RGB. |
 | **Atom Lite** | [`devices/atom-lite.yaml`](devices/atom-lite.yaml) | IR blaster & RGB controller. |
 | **Atom S3** | [`devices/atom-s3.yaml`](devices/atom-s3.yaml) | ESP32-S3 with split display color/backlight control. |
+| **Atom S3 (BLE proxy)** | [`devices/atom-s3-bluetooth-proxy.yaml`](devices/atom-s3-bluetooth-proxy.yaml) | Alternate build with `bluetooth_proxy` enabled (acts as a BLE proxy for Home Assistant). |
 | **Core Ink** | [`devices/core-ink.yaml`](devices/core-ink.yaml) | E-ink display optimization. |
 | **ReSpeaker** | [`devices/respeaker-xvf3800.yaml`](devices/respeaker-xvf3800.yaml) | Advanced voice processing kit. |
 | **Timer Camera F** | [`devices/timer-camera-f/`](devices/timer-camera-f/) | Contains `stream` (video) and `mailbox` (low power) variants. |
@@ -43,6 +44,7 @@ These configurations build upon and enhance the official ESPHome examples:
 **Atom S3**
 - Advanced display control with independent color and brightness management.
 - Optimized for both local and remote control scenarios.
+- Alternate BLE variant available at `devices/atom-s3-bluetooth-proxy.yaml` — enables `bluetooth_proxy` so the device can act as a BLE proxy for Home Assistant. Requires ESPHome >= 2025.12.0 and increases firmware size/RAM slightly. If you plan to run both firmwares on the network, change the `name:` in the BLE file to avoid duplicate device names.
 
 ## Usage
 
@@ -55,7 +57,11 @@ These configurations build upon and enhance the official ESPHome examples:
 
 2. Flash a device:
    ```bash
+   # Default Atom S3
    esphome run devices/atom-s3.yaml
+
+   # Alternate BLE proxy variant (acts as BLE proxy for HA; requires ESPHome >= 2025.12.0)
+   esphome run devices/atom-s3-bluetooth-proxy.yaml
    ```
 
 ## Requirements
