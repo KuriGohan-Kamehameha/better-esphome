@@ -1,0 +1,834 @@
+esphome:
+  name: atom-s3
+  friendly_name: Atom S3
+  min_version: 2025.12.0
+  platformio_options:
+    board_build.flash_mode: dio
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+substitutions:
+  display_rotation: "180" # Options: 0, 90, 180, 270
+  font_family: "gfonts://Roboto"
+  font_size: "26"
+  text_align: "TextAlign::CENTER"
+  text_x_position: "it.get_width() / 2"
+  text_y_position: "it.get_height() / 2 + 35"
+  icon_x_position: "it.get_width() / 2"
+  icon_y_position: "it.get_height() / 2 - 15"
+  pin_ir_tx: GPIO4
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "PKH366LU6sUzsX/6h7U+GlYF1D1gbKNyDE17rDDKlp0="
+web_server:
+  port: 80
+captive_portal:  # This component automatically enables OTA
+
+ota:
+  - platform: esphome
+    password: "efe76fdf71a975279e77443f87c383bb"
+
+globals:
+  - id: bg_red
+    type: float
+    initial_value: '1.0'
+  - id: bg_green
+    type: float
+    initial_value: '1.0'
+  - id: bg_blue
+    type: float
+    initial_value: '1.0'
+  - id: ir_tmp_addr
+    type: uint16_t
+    restore_value: no
+    initial_value: '0'
+  - id: ir_tmp_cmd
+    type: uint16_t
+    restore_value: no
+    initial_value: '0'
+  - id: ir_tmp_pronto
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+
+esp32_ble_tracker:
+
+bluetooth_proxy:
+  active: true
+  cache_services: true
+  connection_slots: 3
+
+# Required for the display to communicate
+spi:
+  clk_pin: 17   # SCK -> G17
+  mosi_pin: 21  # MOSI -> G21
+
+# Load fonts
+font:
+  # Main text font
+  - file: "gfonts://Roboto"
+    id: my_font
+    size: 26
+
+  # Material Design Icons font with specific glyphs
+  # Note: Glyphs list MUST match all icons defined in mapping entries
+  - file: "gfonts://Material+Icons"
+    id: icon_font
+    size: 50
+    glyphs:
+      # Lighting
+      - "\U0000e88a"  # home
+      - "\U0000e0f0"  # lightbulb
+      - "\U0000e90f"  # lightbulb_outline
+      - "\U0000ef52"  # highlight_alt
+      - "\U0000e1ac"  # brightness_high
+      # Climate
+      - "\U0000e1ff"  # device_thermostat
+      - "\U0000e80e"  # whatshot
+      - "\U0000ebd3"  # severe_cold
+      - "\U0000ec0c"  # wind_power
+      - "\U0000eb3b"  # ac_unit
+      - "\U0000f076"  # thermostat (heater)
+      # Water & Weather
+      - "\U0000e798"  # water_drop
+      - "\U0000e430"  # wb_sunny
+      - "\U0000e2bd"  # cloud
+      - "\U0000ea46"  # nights_stay
+      - "\U0000e42d"  # wb_cloudy
+      # Power
+      - "\U0000e63c"  # flash_on
+      - "\U0000e1a4"  # battery_full
+      - "\U0000e19c"  # battery_alert
+      - "\U0000ec0f"  # solar_power
+      # Security
+      - "\U0000e897"  # lock
+      - "\U0000e898"  # lock_open
+      - "\U0000e32a"  # security
+      - "\U0000e3b0"  # camera_alt
+      - "\U0000e566"  # directions_run
+      - "\U0000e855"  # alarm
+      - "\U0000e9e0"  # shield
+      # Doors & Windows
+      - "\U0000f1b5"  # sensor_door
+      - "\U0000eb4f"  # meeting_room
+      - "\U0000f088"  # window
+      - "\U0000e885"  # garage
+      # Rooms
+      - "\U0000eb47"  # kitchen
+      - "\U0000ea48"  # single_bed
+      - "\U0000efdd"  # bathroom
+      - "\U0000e42a"  # view_comfortable
+      - "\U0000e8f9"  # work
+      # Furniture & Appliances
+      - "\U0000efed"  # chair
+      - "\U0000efdf"  # bed
+      - "\U0000e333"  # tv
+      - "\U0000e30a"  # computer
+      - "\U0000e32f"  # tablet
+      # Audio & Media
+      - "\U0000e32d"  # speaker
+      - "\U0000e405"  # music_note
+      - "\U0000e050"  # volume_up
+      - "\U0000e029"  # mic
+      - "\U0000e310"  # headset
+      - "\U0000e03e"  # radio
+      # Appliances
+      - "\U0000f1b1"  # wash
+      - "\U0000f1b3"  # dry
+      - "\U0000e541"  # local_cafe
+      - "\U0000f204"  # microwave
+      # Outdoor
+      - "\U0000ea79"  # agriculture
+      - "\U0000ea99"  # forest
+      - "\U0000ea47"  # outdoor_grill
+      - "\U0000eb48"  # pool
+      # Transport
+      - "\U0000e531"  # directions_car
+      - "\U0000e52f"  # directions_bike
+      - "\U0000e530"  # directions_bus
+      - "\U0000e570"  # train
+      - "\U0000e195"  # airplanemode_active
+      # Connectivity
+      - "\U0000e63e"  # wifi
+      - "\U0000e1a7"  # bluetooth
+      - "\U0000e0cd"  # phone
+      - "\U0000e80b"  # public
+      - "\U0000e307"  # cast
+      # Notifications
+      - "\U0000e7f4"  # notifications
+      - "\U0000e002"  # warning
+      - "\U0000e88e"  # info
+      - "\U0000e000"  # error
+      # Actions
+      - "\U0000e037"  # play_arrow
+      - "\U0000e034"  # pause
+      - "\U0000e047"  # stop
+      - "\U0000e8b8"  # settings
+      - "\U0000e5d3"  # more_horiz
+      - "\U0000e5ca"  # check
+      - "\U0000e5cd"  # close
+      - "\U0000e145"  # add
+      - "\U0000e15b"  # remove
+      # Sensors
+      - "\U0000eb4a"  # smoke_free
+      - "\U0000e7b0"  # co2
+      # Time
+      - "\U0000e924"  # watch_later
+      - "\U0000e425"  # timer
+      - "\U0000e935"  # calendar_today
+      - "\U0000e8b5"  # schedule
+      # Entertainment
+      - "\U0000e30f"  # gamepad
+      - "\U0000e02c"  # movie
+      - "\U0000ea30"  # sports
+      - "\U0000e865"  # book
+      - "\U0000e410"  # photo
+      # Utilities
+      - "\U0000e872"  # delete
+      - "\U0000e760"  # recycling
+      - "\U0000e152"  # filter_list
+      - "\U0000e869"  # build
+      - "\U0000f100"  # home_repair_service
+      # Finance
+      - "\U0000e6e1"  # show_chart
+
+# Define the display
+display:
+  - platform: st7789v
+    id: display_1
+    model: CUSTOM
+    cs_pin: 15      # CS -> G15
+    dc_pin: 33      # DC/RS -> G33
+    reset_pin: 34   # RST -> G34 (note: some GPIO34 pins are input-only on some chips)
+    rotation: ${display_rotation}
+    width: 128
+    height: 128
+    offset_height: 3
+    offset_width: 1
+    lambda: |-
+      // Get friendly name from select and lookup unicode glyph from mapping
+      auto icon_option = id(display_icon).state;
+      const char* icon_char = id(icon_map)[icon_option.c_str()].c_str();
+      
+      if (id(screen_backlight).current_values.is_on()) {
+        // Backlight is ON -> Use the color from globals
+        auto bg_color = Color(id(bg_red) * 255, id(bg_green) * 255, id(bg_blue) * 255);
+        // Set text/icon color based on background brightness for contrast
+        auto fg_color = (id(bg_red) * 0.299 + id(bg_green) * 0.587 + id(bg_blue) * 0.114) > 0.5 ? Color(0, 0, 0) : Color(255, 255, 255);
+        it.fill(bg_color);
+        
+        // Draw icon
+        it.printf($icon_x_position, $icon_y_position, id(icon_font), fg_color, TextAlign::CENTER, "%s", icon_char);
+        
+        // Draw text
+        it.printf($text_x_position, $text_y_position, id(my_font), fg_color, $text_align, "%s", id(display_text).state.c_str());
+      } else {
+        // Backlight is OFF -> Black background, white text/icon
+        it.fill(Color(0, 0, 0));
+        
+        // Draw icon
+        it.printf($icon_x_position, $icon_y_position, id(icon_font), Color(255, 255, 255), TextAlign::CENTER, "%s", icon_char);
+        
+        // Draw text
+        it.printf($text_x_position, $text_y_position, id(my_font), Color(255, 255, 255), $text_align, "%s", id(display_text).state.c_str());
+      }
+
+# Built-in Button (on GPIO 41, which is the screen itself)
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: 41
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: "AtomS3 Button"
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
+    on_press:
+      then:
+        - logger.log: "Button Pressed!"
+        - light.toggle: screen_backlight
+    on_release:
+      then:
+        - logger.log: "Button Released!"
+
+# Virtual outputs for backlight brightness control
+output:
+  - platform: ledc
+    pin: 16 # LCD_BL -> G16
+    id: backlight_output
+    frequency: 1000 Hz
+  - platform: template
+    id: output_red
+    type: float
+    write_action:
+      - lambda: id(bg_red) = state;
+  - platform: template
+    id: output_green
+    type: float
+    write_action:
+      - lambda: id(bg_green) = state;
+  - platform: template
+    id: output_blue
+    type: float
+    write_action:
+      - lambda: id(bg_blue) = state;
+      - component.update: display_1
+
+# RGB light for color control 
+light:
+  - platform: rgb
+    name: "Screen Color"
+    id: screen_colors
+    red: output_red
+    green: output_green
+    blue: output_blue
+    restore_mode: RESTORE_DEFAULT_ON
+    icon: mdi:palette
+    default_transition_length: 500ms
+    gamma_correct: 1.0
+    on_turn_on:
+      - component.update: display_1
+    on_turn_off:
+      - component.update: display_1
+    
+  # Separate backlight brightness control
+  - platform: monochromatic
+    name: "Screen Backlight"
+    id: screen_backlight
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    icon: mdi:brightness-6
+    default_transition_length: 500ms
+text:
+  - platform: template
+    name: "Display Text"
+    id: display_text
+    initial_value: "Hello!"
+    optimistic: true
+    mode: text
+    on_value:
+      then:
+        - component.update: display_1
+
+  - platform: template
+    name: "Atom S3 IR NEC Address"
+    id: atom_ir_nec_address
+    mode: text
+    optimistic: true
+    restore_value: true
+    min_length: 1
+    max_length: 10
+    initial_value: "0x0000"
+    on_value:
+      then:
+        - lambda: |-
+            std::string s = x;
+            auto trim = [](std::string &v) {
+              while (!v.empty() && (v.front() == ' ' || v.front() == '\t' || v.front() == '\r' || v.front() == '\n')) v.erase(v.begin());
+              while (!v.empty() && (v.back()  == ' ' || v.back()  == '\t' || v.back()  == '\r' || v.back()  == '\n')) v.pop_back();
+            };
+            std::string t = s;
+            trim(t);
+            if (t != s) {
+              auto call = id(atom_ir_nec_address).make_call();
+              call.set_value(t);
+              call.perform();
+            }
+
+  - platform: template
+    name: "Atom S3 IR NEC Command"
+    id: atom_ir_nec_command
+    mode: text
+    optimistic: true
+    restore_value: true
+    min_length: 1
+    max_length: 10
+    initial_value: "0x0000"
+    on_value:
+      then:
+        - lambda: |-
+            std::string s = x;
+            auto trim = [](std::string &v) {
+              while (!v.empty() && (v.front() == ' ' || v.front() == '\t' || v.front() == '\r' || v.front() == '\n')) v.erase(v.begin());
+              while (!v.empty() && (v.back()  == ' ' || v.back()  == '\t' || v.back()  == '\r' || v.back()  == '\n')) v.pop_back();
+            };
+            std::string t = s;
+            trim(t);
+            if (t != s) {
+              auto call = id(atom_ir_nec_command).make_call();
+              call.set_value(t);
+              call.perform();
+            }
+
+  - platform: template
+    name: "Atom S3 IR Pronto Data"
+    id: atom_ir_pronto_data
+    mode: text
+    optimistic: true
+    restore_value: true
+    min_length: 255
+    max_length: 255
+    initial_value: ""
+    on_value:
+      then:
+        - lambda: |-
+            std::string raw = x;
+            std::string cleaned;
+            cleaned.reserve(raw.size());
+            bool last_space = true;
+
+            for (char c : raw) {
+              if (c == '\r' || c == '\n' || c == '\t') c = ' ';
+              if (c == ' ') {
+                if (!last_space) cleaned.push_back(' ');
+                last_space = true;
+              } else {
+                cleaned.push_back(c);
+                last_space = false;
+              }
+            }
+            while (!cleaned.empty() && cleaned.back() == ' ') cleaned.pop_back();
+            size_t start = 0;
+            while (start < cleaned.size() && cleaned[start] == ' ') start++;
+            if (start > 0) cleaned.erase(0, start);
+
+            if (cleaned != raw) {
+              auto call = id(atom_ir_pronto_data).make_call();
+              call.set_value(cleaned);
+              call.perform();
+            }
+
+number:
+  - platform: template
+    name: "Atom S3 IR NEC Repeats"
+    id: atom_ir_nec_repeats
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    min_value: 1
+    max_value: 20
+    step: 1
+    mode: box
+
+  - platform: template
+    name: "Atom S3 IR Pronto Repeats"
+    id: atom_ir_pronto_repeats
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    min_value: 1
+    max_value: 10
+    step: 1
+    mode: box
+
+button:
+  - platform: template
+    name: "Atom S3 IR Send NEC"
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              auto trim = [](std::string &v) {
+                while (!v.empty() && (v.front() == ' ' || v.front() == '\t' || v.front() == '\r' || v.front() == '\n')) v.erase(v.begin());
+                while (!v.empty() && (v.back()  == ' ' || v.back()  == '\t' || v.back()  == '\r' || v.back()  == '\n')) v.pop_back();
+              };
+              auto parse_u32 = [](const std::string &s, uint32_t minv, uint32_t maxv, uint32_t &out) -> bool {
+                if (s.empty()) return false;
+                if (s[0] == '-') return false;
+                char *end = nullptr;
+                const unsigned long v = strtoul(s.c_str(), &end, 0);
+                if (end == nullptr || end == s.c_str() || *end != '\0') return false;
+                if (v < minv || v > maxv) return false;
+                out = (uint32_t) v;
+                return true;
+              };
+
+              std::string s_addr = id(atom_ir_nec_address).state;
+              std::string s_cmd  = id(atom_ir_nec_command).state;
+              trim(s_addr);
+              trim(s_cmd);
+
+              uint32_t addr = 0;
+              uint32_t cmd = 0;
+              if (!parse_u32(s_addr, 0, 0xFFFF, addr) || !parse_u32(s_cmd, 0, 0xFFFF, cmd)) {
+                ESP_LOGE("ir", "NEC input invalid (addr='%s' cmd='%s')", s_addr.c_str(), s_cmd.c_str());
+                return false;
+              }
+
+              id(ir_tmp_addr) = (uint16_t) addr;
+              id(ir_tmp_cmd) = (uint16_t) cmd;
+              return true;
+          then:
+            - remote_transmitter.transmit_nec:
+                transmitter_id: atom_ir
+                address: !lambda 'return id(ir_tmp_addr);'
+                command: !lambda 'return id(ir_tmp_cmd);'
+                repeat:
+                  times: !lambda |-
+                    float f_rep = id(atom_ir_nec_repeats).state;
+                    if (f_rep != f_rep) f_rep = 1.0f;
+                    int rep = (int) (f_rep + 0.5f);
+                    if (rep < 1) rep = 1;
+                    if (rep > 20) rep = 20;
+                    return (uint32_t) rep;
+                  wait_time: 10ms
+
+  - platform: template
+    name: "Atom S3 IR Send Pronto"
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              std::string raw = id(atom_ir_pronto_data).state;
+              std::string cleaned;
+              cleaned.reserve(raw.size());
+              bool last_space = true;
+              for (char c : raw) {
+                if (c == '\r' || c == '\n' || c == '\t') c = ' ';
+                if (c == ' ') {
+                  if (!last_space) cleaned.push_back(' ');
+                  last_space = true;
+                } else {
+                  cleaned.push_back(c);
+                  last_space = false;
+                }
+              }
+              while (!cleaned.empty() && cleaned.back() == ' ') cleaned.pop_back();
+              size_t start = 0;
+              while (start < cleaned.size() && cleaned[start] == ' ') start++;
+              if (start > 0) cleaned.erase(0, start);
+
+              if (cleaned.empty()) {
+                ESP_LOGE("ir", "Pronto data empty");
+                return false;
+              }
+              if (cleaned.size() > 1024) {
+                ESP_LOGE("ir", "Pronto too long (len=%u)", (unsigned) cleaned.size());
+                return false;
+              }
+
+              id(ir_tmp_pronto) = cleaned;
+              return true;
+          then:
+            - remote_transmitter.transmit_pronto:
+                transmitter_id: atom_ir
+                data: !lambda 'return id(ir_tmp_pronto);'
+                repeat:
+                  times: !lambda |-
+                    float f_rep = id(atom_ir_pronto_repeats).state;
+                    if (f_rep != f_rep) f_rep = 1.0f;
+                    int rep = (int) (f_rep + 0.5f);
+                    if (rep < 1) rep = 1;
+                    if (rep > 10) rep = 10;
+                    return (uint32_t) rep;
+                  wait_time: 10ms
+
+# On-board IR blaster (Atom S3 IR is on GPIO4)
+remote_transmitter:
+  id: atom_ir
+  pin: ${pin_ir_tx}
+  carrier_duty_percent: 50%
+  rmt_symbols: 128
+
+# Mapping component: Maps friendly names to unicode glyphs
+mapping:
+  - id: icon_map
+    from: string
+    to: string
+    entries:
+      # Lighting
+      "Home": "\U0000e88a"              # home
+      "Light On": "\U0000e0f0"          # lightbulb
+      "Light Off": "\U0000e90f"         # lightbulb_outline
+      "Lamp": "\U0000ef52"              # highlight_alt
+      "Brightness": "\U0000e1ac"        # brightness_high
+
+      # Climate control
+      "Thermometer": "\U0000e1ff"       # device_thermostat
+      "Hot": "\U0000e80e"               # whatshot
+      "Cold": "\U0000ebd3"              # severe_cold
+      "Fan": "\U0000ec0c"               # wind_power
+      "AC": "\U0000eb3b"                # ac_unit
+      "Heater": "\U0000f076"            # thermostat
+
+      # Water & Weather
+      "Water": "\U0000e798"             # water_drop
+      "Rain": "\U0000e2bd"              # cloud
+      "Sunny": "\U0000e430"             # wb_sunny
+      "Moon": "\U0000ea46"              # nights_stay
+      "Weather": "\U0000e42d"           # wb_cloudy
+
+      # Power & Energy
+      "Power": "\U0000e63c"             # flash_on
+      "Battery": "\U0000e1a4"           # battery_full
+      "Battery Low": "\U0000e19c"       # battery_alert
+      "Solar": "\U0000ec0f"             # solar_power
+
+      # Security
+      "Lock": "\U0000e897"              # lock
+      "Unlock": "\U0000e898"            # lock_open
+      "Security": "\U0000e32a"          # security
+      "Camera": "\U0000e3b0"            # camera_alt
+      "Motion": "\U0000e566"            # directions_run
+      "Alarm": "\U0000e855"             # alarm
+      "Shield": "\U0000e9e0"            # shield
+
+      # Doors & Windows
+      "Door": "\U0000f1b5"              # sensor_door
+      "Door Open": "\U0000eb4f"         # meeting_room
+      "Window": "\U0000f088"            # window
+      "Garage Door": "\U0000e885"       # garage
+
+      # Rooms
+      "Kitchen": "\U0000eb47"           # kitchen
+      "Bedroom": "\U0000ea48"           # single_bed
+      "Bathroom": "\U0000efdd"          # bathroom
+      "Living Room": "\U0000e42a"       # view_comfortable
+      "Office": "\U0000e8f9"            # work
+      "Garage": "\U0000e885"            # garage
+
+      # Furniture & Appliances
+      "Chair": "\U0000efed"             # chair
+      "Bed": "\U0000efdf"               # bed
+      "TV": "\U0000e333"                # tv
+      "Computer": "\U0000e30a"          # computer
+      "Tablet": "\U0000e32f"            # tablet
+
+      # Audio & Media
+      "Speaker": "\U0000e32d"           # speaker
+      "Music": "\U0000e405"             # music_note
+      "Volume": "\U0000e050"            # volume_up
+      "Microphone": "\U0000e029"        # mic
+      "Headphones": "\U0000e310"        # headset
+      "Radio": "\U0000e03e"             # radio
+
+      # Appliances
+      "Washer": "\U0000f1b1"            # wash
+      "Dryer": "\U0000f1b3"             # dry
+      "Coffee": "\U0000e541"            # local_cafe
+      "Microwave": "\U0000f204"         # microwave
+      "Fridge": "\U0000eb47"            # kitchen
+
+      # Outdoor
+      "Garden": "\U0000ea79"            # agriculture
+      "Tree": "\U0000ea99"              # forest
+      "BBQ": "\U0000ea47"               # outdoor_grill
+      "Pool": "\U0000eb48"              # pool
+      "Sprinkler": "\U0000e798"         # water_drop
+
+      # Transport
+      "Car": "\U0000e531"               # directions_car
+      "Bike": "\U0000e52f"              # directions_bike
+      "Bus": "\U0000e530"               # directions_bus
+      "Train": "\U0000e570"             # train
+      "Airplane": "\U0000e195"          # airplanemode_active
+
+      # Connectivity
+      "WiFi": "\U0000e63e"              # wifi
+      "Bluetooth": "\U0000e1a7"         # bluetooth
+      "Phone": "\U0000e0cd"             # phone
+      "Network": "\U0000e80b"           # public
+      "Cast": "\U0000e307"              # cast
+
+      # Notifications & Alerts
+      "Notification": "\U0000e7f4"      # notifications
+      "Alert": "\U0000e002"             # warning
+      "Info": "\U0000e88e"              # info
+      "Error": "\U0000e000"             # error
+
+      # Actions & Controls
+      "Play": "\U0000e037"              # play_arrow
+      "Pause": "\U0000e034"             # pause
+      "Stop": "\U0000e047"              # stop
+      "Settings": "\U0000e8b8"          # settings
+      "More": "\U0000e5d3"              # more_horiz
+      "Check": "\U0000e5ca"             # check
+      "Close": "\U0000e5cd"             # close
+      "Add": "\U0000e145"               # add
+      "Remove": "\U0000e15b"            # remove
+
+      # Sensors
+      "Temperature": "\U0000e1ff"       # device_thermostat
+      "Smoke": "\U0000eb4a"             # smoke_free
+      "CO2": "\U0000e7b0"               # co2
+
+      # Time & Schedule
+      "Clock": "\U0000e924"             # watch_later
+      "Timer": "\U0000e425"             # timer
+      "Alarm Clock": "\U0000e855"       # alarm
+      "Calendar": "\U0000e935"          # calendar_today
+      "Schedule": "\U0000e8b5"          # schedule
+
+      # Entertainment
+      "Gaming": "\U0000e30f"            # gamepad
+      "Movie": "\U0000e02c"             # movie
+      "Sports": "\U0000ea30"            # sports
+      "Book": "\U0000e865"              # book
+      "Photo": "\U0000e410"             # photo
+
+      # Utilities
+      "Trash": "\U0000e872"             # delete
+      "Recycle": "\U0000e760"           # recycling
+      "Filter": "\U0000e152"            # filter_list
+      "Tools": "\U0000e869"             # build
+      "Repair": "\U0000f100"            # home_repair_service
+
+      # Finance
+      "Stock": "\U0000e6e1"             # show_chart
+
+select:
+  - platform: template
+    name: "Display Icon"
+    id: display_icon
+    optimistic: true
+    initial_option: "Home"
+    options:
+      # Lighting
+      - "Home"
+      - "Light On"
+      - "Light Off"
+      - "Lamp"
+      - "Brightness"
+      # Climate
+      - "Thermometer"
+      - "Hot"
+      - "Cold"
+      - "Fan"
+      - "AC"
+      - "Heater"
+      # Water & Weather
+      - "Water"
+      - "Rain"
+      - "Sunny"
+      - "Moon"
+      - "Weather"
+      # Power
+      - "Power"
+      - "Battery"
+      - "Battery Low"
+      - "Solar"
+      # Security
+      - "Lock"
+      - "Unlock"
+      - "Security"
+      - "Camera"
+      - "Motion"
+      - "Alarm"
+      - "Shield"
+      # Doors & Windows
+      - "Door"
+      - "Door Open"
+      - "Window"
+      - "Garage Door"
+      # Rooms
+      - "Kitchen"
+      - "Bedroom"
+      - "Bathroom"
+      - "Living Room"
+      - "Office"
+      - "Garage"
+      # Furniture
+      - "Chair"
+      - "Bed"
+      - "TV"
+      - "Computer"
+      - "Tablet"
+      # Audio & Media
+      - "Speaker"
+      - "Music"
+      - "Volume"
+      - "Microphone"
+      - "Headphones"
+      - "Radio"
+      # Appliances
+      - "Washer"
+      - "Dryer"
+      - "Coffee"
+      - "Microwave"
+      - "Fridge"
+      # Outdoor
+      - "Garden"
+      - "Tree"
+      - "BBQ"
+      - "Pool"
+      - "Sprinkler"
+      # Transport
+      - "Car"
+      - "Bike"
+      - "Bus"
+      - "Train"
+      - "Airplane"
+      # Connectivity
+      - "WiFi"
+      - "Bluetooth"
+      - "Phone"
+      - "Network"
+      - "Cast"
+      # Notifications
+      - "Notification"
+      - "Alert"
+      - "Info"
+      - "Error"
+      # Actions
+      - "Play"
+      - "Pause"
+      - "Stop"
+      - "Settings"
+      - "More"
+      - "Check"
+      - "Close"
+      - "Add"
+      - "Remove"
+      # Sensors
+      - "Temperature"
+      - "Smoke"
+      - "CO2"
+      # Time
+      - "Clock"
+      - "Timer"
+      - "Alarm Clock"
+      - "Calendar"
+      - "Schedule"
+      # Entertainment
+      - "Gaming"
+      - "Movie"
+      - "Sports"
+      - "Book"
+      - "Photo"
+      # Utilities
+      - "Trash"
+      - "Recycle"
+      - "Filter"
+      - "Tools"
+      - "Repair"
+      # Finance
+      - "Stock"
+    on_value:
+      then:
+        - component.update: display_1
+sensor:
+  - platform: template
+    name: "Display Rotation"
+    id: display_rotation_sensor
+    unit_of_measurement: "°"
+    update_interval: never
+    lambda: |-
+      return ${display_rotation};
