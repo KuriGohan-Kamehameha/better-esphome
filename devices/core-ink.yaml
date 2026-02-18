@@ -1,6 +1,11 @@
 substitutions:
   devicename: "core-ink"
   friendly_name: "Core Ink"
+  # Display layout overrides (change these to tweak icon/text size & position)
+  icon_font_size: "72"
+  text_font_size: "20"
+  icon_y_offset: "-10"
+  text_y_offset: "-26"
 
 external_components:
   - source:
@@ -17,6 +22,20 @@ esphome:
     upload_speed: 1500000
     # Critical: Free GPIO9/10 from Quad flash so CS on GPIO9 can work.
     board_build.flash_mode: dio
+  on_boot:
+    - priority: 400
+      then:
+        # Show WiFi icon + IP (or friendly name if IP not available) on boot
+        - select.set:
+            id: display_icon
+            option: "WiFi"
+        - lambda: |-
+            if (!id(coreink_ip).state.empty()) {
+              id(display_text).publish_state(id(coreink_ip).state);
+            } else {
+              id(display_text).publish_state("${friendly_name} Ready");
+            }
+        - component.update: my_display
 
 esp32:
   board: m5stack-coreink
@@ -75,12 +94,351 @@ display:
     model: 1.54in-m5coreink-m09
     update_interval: 8s
     lambda: |-
-      it.print(5, 5, id(helvetica_20), "ESPHome");
+      // Look up the selected icon and render icon + text centered on the e-paper
+      auto icon_option = id(display_icon).state;
+      const char* icon_char = id(icon_map)[icon_option.c_str()].c_str();
+
+      // White background for e-paper, black foreground for icon/text
+      it.fill(Color(255, 255, 255));
+
+      // Draw icon (large, centered)
+      it.printf(it.get_width() / 2, it.get_height() / 2 + ${icon_y_offset}, id(icon_font), Color(0, 0, 0), TextAlign::CENTER, "%s", icon_char);
+
+      // Draw text (centered below icon)
+      it.printf(it.get_width() / 2, it.get_height() + ${text_y_offset}, id(helvetica_20), Color(0, 0, 0), TextAlign::CENTER, "%s", id(display_text).state.c_str());
 
 font:
   - file: "gfonts://Roboto"
     id: helvetica_20
-    size: 20
+    size: ${text_font_size}
+
+  - file: "gfonts://Material+Icons"
+    id: icon_font
+    size: ${icon_font_size}
+    glyphs:
+      - "\U0000e88a"  # home
+      - "\U0000e0f0"  # lightbulb
+      - "\U0000e90f"  # lightbulb_outline
+      - "\U0000ef52"  # highlight_alt
+      - "\U0000e1ac"  # brightness_high
+      - "\U0000e1ff"  # device_thermostat
+      - "\U0000e80e"  # whatshot
+      - "\U0000ebd3"  # severe_cold
+      - "\U0000ec0c"  # wind_power
+      - "\U0000eb3b"  # ac_unit
+      - "\U0000f076"  # thermostat (heater)
+      - "\U0000e798"  # water_drop
+      - "\U0000e430"  # wb_sunny
+      - "\U0000e2bd"  # cloud
+      - "\U0000ea46"  # nights_stay
+      - "\U0000e42d"  # wb_cloudy
+      - "\U0000e63c"  # flash_on
+      - "\U0000e1a4"  # battery_full
+      - "\U0000e19c"  # battery_alert
+      - "\U0000ec0f"  # solar_power
+      - "\U0000e897"  # lock
+      - "\U0000e898"  # lock_open
+      - "\U0000e32a"  # security
+      - "\U0000e3b0"  # camera_alt
+      - "\U0000e566"  # directions_run
+      - "\U0000e855"  # alarm
+      - "\U0000e9e0"  # shield
+      - "\U0000f1b5"  # sensor_door
+      - "\U0000eb4f"  # meeting_room
+      - "\U0000f088"  # window
+      - "\U0000e885"  # garage
+      - "\U0000eb47"  # kitchen
+      - "\U0000ea48"  # single_bed
+      - "\U0000efdd"  # bathroom
+      - "\U0000e42a"  # view_comfortable
+      - "\U0000e8f9"  # work
+      - "\U0000efed"  # chair
+      - "\U0000efdf"  # bed
+      - "\U0000e333"  # tv
+      - "\U0000e30a"  # computer
+      - "\U0000e32f"  # tablet
+      - "\U0000e32d"  # speaker
+      - "\U0000e405"  # music_note
+      - "\U0000e050"  # volume_up
+      - "\U0000e029"  # mic
+      - "\U0000e310"  # headset
+      - "\U0000e03e"  # radio
+      - "\U0000f1b1"  # wash
+      - "\U0000f1b3"  # dry
+      - "\U0000e541"  # local_cafe
+      - "\U0000f204"  # microwave
+      - "\U0000ea79"  # agriculture
+      - "\U0000ea99"  # forest
+      - "\U0000ea47"  # outdoor_grill
+      - "\U0000eb48"  # pool
+      - "\U0000e531"  # directions_car
+      - "\U0000e52f"  # directions_bike
+      - "\U0000e530"  # directions_bus
+      - "\U0000e570"  # train
+      - "\U0000e195"  # airplanemode_active
+      - "\U0000e63e"  # wifi
+      - "\U0000e1a7"  # bluetooth
+      - "\U0000e0cd"  # phone
+      - "\U0000e80b"  # public
+      - "\U0000e307"  # cast
+      - "\U0000e7f4"  # notifications
+      - "\U0000e002"  # warning
+      - "\U0000e88e"  # info
+      - "\U0000e000"  # error
+      - "\U0000e037"  # play_arrow
+      - "\U0000e034"  # pause
+      - "\U0000e047"  # stop
+      - "\U0000e8b8"  # settings
+      - "\U0000e5d3"  # more_horiz
+      - "\U0000e5ca"  # check
+      - "\U0000e5cd"  # close
+      - "\U0000e145"  # add
+      - "\U0000e15b"  # remove
+      - "\U0000eb4a"  # smoke_free
+      - "\U0000e7b0"  # co2
+      - "\U0000e924"  # watch_later
+      - "\U0000e425"  # timer
+      - "\U0000e935"  # calendar_today
+      - "\U0000e8b5"  # schedule
+      - "\U0000e30f"  # gamepad
+      - "\U0000e02c"  # movie
+      - "\U0000ea30"  # sports
+      - "\U0000e865"  # book
+      - "\U0000e410"  # photo
+      - "\U0000e872"  # delete
+      - "\U0000e760"  # recycling
+      - "\U0000e152"  # filter_list
+      - "\U0000e869"  # build
+      - "\U0000f100"  # home_repair_service
+      - "\U0000e6e1"  # show_chart
+
+mapping:
+  - id: icon_map
+    from: string
+    to: string
+    entries:
+      "Home": "\U0000e88a"              # home
+      "Light On": "\U0000e0f0"          # lightbulb
+      "Light Off": "\U0000e90f"         # lightbulb_outline
+      "Lamp": "\U0000ef52"              # highlight_alt
+      "Brightness": "\U0000e1ac"        # brightness_high
+      "Thermometer": "\U0000e1ff"       # device_thermostat
+      "Hot": "\U0000e80e"               # whatshot
+      "Cold": "\U0000ebd3"              # severe_cold
+      "Fan": "\U0000ec0c"               # wind_power
+      "AC": "\U0000eb3b"                # ac_unit
+      "Heater": "\U0000f076"            # thermostat
+      "Water": "\U0000e798"             # water_drop
+      "Rain": "\U0000e2bd"              # cloud
+      "Sunny": "\U0000e430"             # wb_sunny
+      "Moon": "\U0000ea46"              # nights_stay
+      "Weather": "\U0000e42d"           # wb_cloudy
+      "Power": "\U0000e63c"             # flash_on
+      "Battery": "\U0000e1a4"           # battery_full
+      "Battery Low": "\U0000e19c"       # battery_alert
+      "Solar": "\U0000ec0f"             # solar_power
+      "Lock": "\U0000e897"              # lock
+      "Unlock": "\U0000e898"            # lock_open
+      "Security": "\U0000e32a"          # security
+      "Camera": "\U0000e3b0"            # camera_alt
+      "Motion": "\U0000e566"            # directions_run
+      "Alarm": "\U0000e855"             # alarm
+      "Shield": "\U0000e9e0"            # shield
+      "Door": "\U0000f1b5"              # sensor_door
+      "Door Open": "\U0000eb4f"         # meeting_room
+      "Window": "\U0000f088"            # window
+      "Garage Door": "\U0000e885"       # garage
+      "Kitchen": "\U0000eb47"           # kitchen
+      "Bedroom": "\U0000ea48"           # single_bed
+      "Bathroom": "\U0000efdd"          # bathroom
+      "Living Room": "\U0000e42a"       # view_comfortable
+      "Office": "\U0000e8f9"            # work
+      "Garage": "\U0000e885"            # garage
+      "Chair": "\U0000efed"             # chair
+      "Bed": "\U0000efdf"               # bed
+      "TV": "\U0000e333"                # tv
+      "Computer": "\U0000e30a"          # computer
+      "Tablet": "\U0000e32f"            # tablet
+      "Speaker": "\U0000e32d"           # speaker
+      "Music": "\U0000e405"             # music_note
+      "Volume": "\U0000e050"            # volume_up
+      "Microphone": "\U0000e029"        # mic
+      "Headphones": "\U0000e310"        # headset
+      "Radio": "\U0000e03e"             # radio
+      "Washer": "\U0000f1b1"            # wash
+      "Dryer": "\U0000f1b3"             # dry
+      "Coffee": "\U0000e541"            # local_cafe
+      "Microwave": "\U0000f204"         # microwave
+      "Fridge": "\U0000eb47"            # kitchen
+      "Garden": "\U0000ea79"            # agriculture
+      "Tree": "\U0000ea99"              # forest
+      "BBQ": "\U0000ea47"               # outdoor_grill
+      "Pool": "\U0000eb48"              # pool
+      "Sprinkler": "\U0000e798"         # water_drop
+      "Car": "\U0000e531"               # directions_car
+      "Bike": "\U0000e52f"              # directions_bike
+      "Bus": "\U0000e530"               # directions_bus
+      "Train": "\U0000e570"             # train
+      "Airplane": "\U0000e195"          # airplanemode_active
+      "WiFi": "\U0000e63e"              # wifi
+      "Bluetooth": "\U0000e1a7"         # bluetooth
+      "Phone": "\U0000e0cd"             # phone
+      "Network": "\U0000e80b"           # public
+      "Cast": "\U0000e307"              # cast
+      "Notification": "\U0000e7f4"      # notifications
+      "Alert": "\U0000e002"             # warning
+      "Info": "\U0000e88e"              # info
+      "Error": "\U0000e000"             # error
+      "Play": "\U0000e037"              # play_arrow
+      "Pause": "\U0000e034"             # pause
+      "Stop": "\U0000e047"               # stop
+      "Settings": "\U0000e8b8"          # settings
+      "More": "\U0000e5d3"              # more_horiz
+      "Check": "\U0000e5ca"             # check
+      "Close": "\U0000e5cd"             # close
+      "Add": "\U0000e145"               # add
+      "Remove": "\U0000e15b"            # remove
+      "Temperature": "\U0000e1ff"       # device_thermostat
+      "Smoke": "\U0000eb4a"             # smoke_free
+      "CO2": "\U0000e7b0"               # co2
+      "Clock": "\U0000e924"             # watch_later
+      "Timer": "\U0000e425"             # timer
+      "Alarm Clock": "\U0000e855"       # alarm
+      "Calendar": "\U0000e935"          # calendar_today
+      "Schedule": "\U0000e8b5"          # schedule
+      "Gaming": "\U0000e30f"            # gamepad
+      "Movie": "\U0000e02c"             # movie
+      "Sports": "\U0000ea30"            # sports
+      "Book": "\U0000e865"              # book
+      "Photo": "\U0000e410"             # photo
+      "Trash": "\U0000e872"             # delete
+      "Recycle": "\U0000e760"           # recycling
+      "Filter": "\U0000e152"            # filter_list
+      "Tools": "\U0000e869"             # build
+      "Repair": "\U0000f100"            # home_repair_service
+      "Stock": "\U0000e6e1"             # show_chart
+
+select:
+  - platform: template
+    name: "Display Icon"
+    id: display_icon
+    optimistic: true
+    initial_option: "Home"
+    options:
+      - "Home"
+      - "Light On"
+      - "Light Off"
+      - "Lamp"
+      - "Brightness"
+      - "Thermometer"
+      - "Hot"
+      - "Cold"
+      - "Fan"
+      - "AC"
+      - "Heater"
+      - "Water"
+      - "Rain"
+      - "Sunny"
+      - "Moon"
+      - "Weather"
+      - "Power"
+      - "Battery"
+      - "Battery Low"
+      - "Solar"
+      - "Lock"
+      - "Unlock"
+      - "Security"
+      - "Camera"
+      - "Motion"
+      - "Alarm"
+      - "Shield"
+      - "Door"
+      - "Door Open"
+      - "Window"
+      - "Garage Door"
+      - "Kitchen"
+      - "Bedroom"
+      - "Bathroom"
+      - "Living Room"
+      - "Office"
+      - "Garage"
+      - "Chair"
+      - "Bed"
+      - "TV"
+      - "Computer"
+      - "Tablet"
+      - "Speaker"
+      - "Music"
+      - "Volume"
+      - "Microphone"
+      - "Headphones"
+      - "Radio"
+      - "Washer"
+      - "Dryer"
+      - "Coffee"
+      - "Microwave"
+      - "Fridge"
+      - "Garden"
+      - "Tree"
+      - "BBQ"
+      - "Pool"
+      - "Sprinkler"
+      - "Car"
+      - "Bike"
+      - "Bus"
+      - "Train"
+      - "Airplane"
+      - "WiFi"
+      - "Bluetooth"
+      - "Phone"
+      - "Network"
+      - "Cast"
+      - "Notification"
+      - "Alert"
+      - "Info"
+      - "Error"
+      - "Play"
+      - "Pause"
+      - "Stop"
+      - "Settings"
+      - "More"
+      - "Check"
+      - "Close"
+      - "Add"
+      - "Remove"
+      - "Temperature"
+      - "Smoke"
+      - "CO2"
+      - "Clock"
+      - "Timer"
+      - "Alarm Clock"
+      - "Calendar"
+      - "Schedule"
+      - "Gaming"
+      - "Movie"
+      - "Sports"
+      - "Book"
+      - "Photo"
+      - "Trash"
+      - "Recycle"
+      - "Filter"
+      - "Tools"
+      - "Repair"
+      - "Stock"
+    on_value:
+      then:
+        - component.update: my_display
+
+text:
+  - platform: template
+    name: "Display Text"
+    id: display_text
+    initial_value: "Hello!"
+    optimistic: true
+    mode: text
+    on_value:
+      then:
+        - component.update: my_display
 
 # Make the display change even without time (uptime ticks).
 interval:
